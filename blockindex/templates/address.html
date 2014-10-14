@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<div class="col-lg-12">
+    <h1> address: {{ address }}</h1>
+    <button class="btn btn-success">
+        <span> balance: {{ balance|float }} </span>
+    </button>
+    <h2> tx list: </h2>
+
+    {% for tx in txs %}
+
+    <div class="transaction_section"> 
+        <div class="transaction" > 
+            <div class="transaction_hash">
+                <a href=/tx/{{ tx.txid }}  >  {{tx.txid[0:15]}}... </a>
+                <span class="pull-right"> <span> Input:  {{tx.valueIn |float}}  BTC
+                        Out:  {{tx.valueOut}}  BTC
+                        Fee:  {{tx.fee}}
+                        Size:  {{tx.size}}
+                        Time:  {{tx.time}}
+                </span> </span>
+            </div>
+
+        {% if 'coinbase' in tx.vin[0] %}
+            <div class="tx_input">
+                <a href="/tx/{{ tx.txid }} "> Coinbase: {{tx.vin[0].coinbase[:20]}}... </a>
+            </div>
+        {% else %}  
+            <div class="tx_input">
+                {% for txin in tx.vin %}
+                {% for addr in txin.preOutScriptPubKey.addresses %}
+                <a href="/tx/{{ txin.txid }} ">  {{addr}}   </a>
+                {% endfor %}
+                <span class="pull-right"> <span>  {{txin.value | float}}  BTC     </span></span> 
+                {% endfor %}
+            </div>
+        {% endif %}  
+
+            <div class="tx_arrow"> <i class="fa fa-arrow-right fa-3x"> </i> </div>
+
+            <div class="tx_output">
+
+                {% for txout in tx.vout %}
+                {% for addr in txout.scriptPubKey.addresses %}
+                <a href="/addr/{{addr}} ">  {{addr}}   </a>
+                {% endfor %}
+                <span class="pull-right"> <span>  {{txout.value | float}}  BTC </span></span> 
+                {% endfor %}
+            </div>
+
+            <div class="currency_btn"> <button class="btn btn-success cb">
+                    <span>  {{ tx.valueOut }} </span>
+                </button> 
+        </div> </div>
+
+        {% endfor %}
+
+        <div class="row">
+            <div class="span10">
+                <ul class="pager">
+                    {% if page > 0 %}
+                    <li><a href=/addr/{{address}}/{{ page - 1 }}>Prev page</a></li>
+                    {% endif %}
+                    <li><a href=/addr/{{address}}/{{ page + 1 }}>Next page</a></li>
+                </ul>  
+            </div>
+        </div>
+    </div>
+</div>
+ 
+{% endblock %}

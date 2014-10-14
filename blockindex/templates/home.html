@@ -1,0 +1,226 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="col-lg-8"><h3>Search</h3><div class="well">
+         <p><i>Search with addr, height, txhash</i></p>
+            <form class="form-inline" role="form" action="/search" id="searchform">
+            <div class="form-group">
+            <input type="text" name="q" class="form-control" size="64" value="" id="search_field" placeholder="Search by address / block / hash" /></div>
+            <input type="submit" class="btn btn-primary search_button" value="搜索" />
+        </form>
+    </div></div>
+        
+ 
+<div class="col-lg-12"><h3>LAST BLOCK</h3>
+  <table class="table table-condensed table-striped">
+    <thead>
+      <tr>
+        <th class="text-center">Height</th>
+        <th class="text-center">Time</th>
+        <th class="text-center">Block Size (byte)</th>
+        <th class="text-center">Transactions</th>
+        <th class="text-center">New Block Awards <br/>(BTC)</th>
+      </tr>
+    </thead>
+    <tbody id="liveblock">
+  
+    </tbody>
+  </table> 
+</div>
+
+
+<div style="width:100%;clear:both"><h3>LAST TX</h3> </div>
+
+<span class="label label-default"> <abbr class="timeago" rel="tooltip" data-animation="false" title="All Transactions"><input class="tag" id="all"    type="checkbox">   All</span>
+<span class="label label-primary"> <abbr class="timeago" rel="tooltip" data-animation="false" title="Transactions biger than 10BTC"><input class="tag" id="big"  type="checkbox"> Big Tx</span>
+<span class="label label-danger" > <abbr class="timeago" rel="tooltip" data-animation="false" title="P2PKH tx"><input class="tag" id="stand"  type="checkbox">    stand tx</span>
+<span class="label label-success"> <abbr class="timeago" rel="tooltip" data-animation="false" title="P2SH tx"><input class="tag" id="p2sh"   type="checkbox">    P2SH</span>
+<span class="label label-info"   > <abbr class="timeago" rel="tooltip" data-animation="false" title="MULTISIG tx"><input class="tag" id="multi"  type="checkbox">    MULTISIG</span>
+<span class="label label-warning"> <abbr class="timeago" rel="tooltip" data-animation="false" title="OP_RETURN tx"><input class="tag" id="return" type="checkbox">   OP_RETURN</span>
+<span class="label label-danger" > <abbr class="timeago" rel="tooltip" data-animation="false" title="nonstand tx"><input class="tag" id="nostand" type="checkbox">    Nonstand</span>
+
+
+<div class="livetx_container" style="width:100%;clear:both">
+</div>
+
+<br style='clear:both;'/>
+
+<script type="text/javascript">
+    var liveblockTemplate = function anonymous(block) {
+var out='      <tr>\n\t\t<td class="text-center"><a href=\''+'/blk/'+( block.hash )+'\'>'+( block.height )+'</a></td>\n'; 
+out+='\n\t\t<td class="text-center"><abbr class="timeago" rel="tooltip" data-animation="false" title="'+( block.time )+'Z">'+( block.time )+' UTC</abbr></td>\n\t\t<td class="text-center">'+( block.size )+'</td>\n\t\t<td class="text-center">'+( block.tx.length )+'</td>\n\t\t<td class="text-right">'+( block.out )+'</td>\n </tr>';
+return out;
+}
+
+var livetxT = function anonymous(tx) { 
+var s  = ' <div class="transaction_section"> <div class="transaction" > <div class="transaction_hash">';
+s += '<a href=/tx/' + (  tx.txid ) + '>' + (tx.txid).substring(0, 15) + '... </a>';
+s += '<a href=http://btcnodes.org/node/' + ( tx.relayip) +'>Relayed by' + ( tx.relayip ) +'</a>';
+s += '<span class="pull-right"> <span> Input:' + (tx.valueIn).toFixed(8) + 'BTC';
+s += '   Output:' + (tx.valueOut).toFixed(8) + 'BTC';
+s += '   Fee:' + (tx.fee).toFixed(8);
+s += '   Size:' + (tx.size);
+s += '   Time:' + (tx.time);
+s += '</span> </span>'
+s += '  </div>';
+
+s += ' <div class="tx_input">';
+for(var f=0;f<tx.vin.length;f++){
+    var txin = tx.vin[f]
+    var valuein = tx.vin[f].value
+    var preout = tx.vin[f].preOutScriptPubKey
+    if (txin.tag != null)
+        s += '<a href=' + txin.tag[1] + '>' + txin.tag[0] + '</a>    ';
+    for(var i=0;i<preout.addresses.length;i++){
+        s += '<a href="../addr/' + (preout.addresses[i]) +'">' + (preout.addresses[i]) + ' </a>';
+        s += '<span class="pull-right"> <span>' + (txin.value).toFixed(8) + 'BTC   ' + '</span></span>'; 
+    }
+}
+s += ' </div>';
+
+s += ' <div class="tx_arrow"> <i class="fa fa-arrow-right fa-3x"> </i> </div>';
+
+s += ' <div class="tx_output">';
+
+for(var f=0;f<tx.vout.length;f++){
+    txout = tx.vout[f]
+    valueout = tx.vout[f].value
+    out = tx.vout[f].scriptPubKey
+    if (txout.tag != null)
+        s += '<a href=' + txout.tag[1] + '>' + txout.tag[0] + '</a>    ';
+    for(var i=0;i<out.addresses.length;i++){
+        s += '<a href="../addr/' + (out.addresses[i]) +'">' + (out.addresses[i]) + ' </a>';
+        s += '<span class="pull-right"> <span>' + (txout.value).toFixed(8) + 'BTC'; 
+        s += ' ' + '</span></span>'; 
+    }
+}
+
+s += ' </div>';
+
+s += ' <div class="currency_btn"> <button class="btn btn-success cb">';
+s += ' <span>' + tx.valueOut + '</span>';
+s += ' </button> </div> </div>';
+return s;
+}
+ 
+
+    var livetx;
+    var liveblock;
+    var websocket;
+    
+    function setupLiveIndex(data)
+    {
+        closeLiveIndex();
+    
+        livetx = document.getElementById("livetx");
+        liveblock = document.getElementById("liveblock");
+
+        var l = window.location;
+        var livetx_url = "ws://blkdb.com:8887/"
+
+        websocket = new WebSocket(livetx_url);
+        websocket.onopen = function(evt) { websocket.send(JSON.stringify({ subscribe: 'livetx', filter: ['all'] })); };
+        websocket.onerror = function(evt) { };
+        websocket.onmessage = function(evt)
+            { 
+            message = JSON.parse(evt.data);
+            var itemtype = message['item'];
+            if (itemtype == 'tx')
+                {
+                writeTx(data, message);
+                }
+            else if (itemtype == 'block')
+                {
+                console.log('block')
+                writeBlk(data, message);
+                }
+            else
+                {
+                return;
+                }
+            };
+        
+        // Remove text nodes to have a clean childNodes list
+        for(var i=0;i<liveblock.childNodes.length;i++)
+        {
+          if(liveblock.childNodes[i].nodeType==3)
+            liveblock.removeChild(liveblock.childNodes[i--]);
+          else
+            continue;
+        }
+
+
+    }
+    function closeLiveIndex()
+    {
+      // Close previous connection (if any)
+      if (websocket !== undefined)
+        websocket.close();
+    }
+
+
+ function writeTx(data, message)
+    {
+    $(".livetx_container").prepend(livetxT(message));
+
+    var txs = $('.transaction_section');
+    while (txs.length >= 10)
+        {
+        txs[txs.length - 1].remove();
+        txs = $('.transaction_section');
+        }
+    }
+ function writeBlk(data, message)
+    {
+    var pre = document.createElement("tr");
+
+    var output;
+    
+    pre.innerHTML = liveblockTemplate(message);
+    output = liveblock;
+
+    while (output.childNodes.length >= 10)
+        output.removeChild(output.childNodes[output.childNodes.length - 1]);
+
+    if (output.childNodes.length > 1)
+        output.insertBefore(pre, output.childNodes[0]);
+    else
+        output.appendChild(pre);
+
+    }
+
+window.addEventListener("load", setupLiveIndex, false);
+
+function gettag()
+    {
+        if ($('#all:checked').length==1)
+           return '["all"]';
+        var tag = '[';
+        if ($('#big:checked').length==1)
+           tag += '"big",'
+        if ($('#stand:checked').length==1)
+           tag += '"pubkeyhash",'
+        if ($('#p2sh:checked').length==1)
+           tag += '"scripthash",'
+        if ($('#multi:checked').length==1)
+           tag += '"multisig",'
+        if ($('#return:checked').length==1)
+           tag += '"nulldat",'
+        if ($('#nostand:checked').length==1)
+           tag += '"nonstandard",'
+        tag += ']'
+        return tag;
+
+    }
+$( document ).ready(function() {
+        $('.tag').click(function() {
+        tag = gettag();
+        console.log(tag)
+        websocket.send(JSON.stringify({ subscribe: 'livetx', filter: tag }));
+        });
+$('.label-default').tooltip({'placement': 'top'});
+});
+
+</script>
+    
+{% endblock %}

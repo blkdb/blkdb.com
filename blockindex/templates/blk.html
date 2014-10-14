@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+    <div class="col-lg-12">
+        <h1>
+            Block Height: {{ blk.height }}</h1>
+        <table class="table table-striped">
+                <tr> <td> Block Size </td> <td> {{ blk.size}} </td> </tr>
+                <tr> <td> Confirmations </td> <td> {{ blk.confirmations }} </td> </tr>
+                <tr> <td> Version </td> <td> {{ blk.version }} </td> </tr>
+                <tr> <td> Merkle </td> <td> {{ blk.merkleroot }} </td> </tr>
+                <tr> <td> Time </td> <td> {{ blk.time }} </td> </tr>
+                <tr> <td> Nonce </td> <td> {{ blk.nonce }} </td> </tr>
+                <tr> <td> Bits </td> <td> {{ blk.bits }} </td> </tr>
+                <tr> <td> Difficulty </td> <td> {{ blk.difficulty }} </td> </tr>
+                <tr> <td> Transactions </td> <td> {{ blk.txnum }} </td> </tr>
+                <tr> <td> Average Transactions Size </td> <td> {{ blk.txper }}字节 </td> </tr>
+                <tr> <td> chainwork </td> <td> {{ blk.chainwork }} </td> </tr>
+                <tr> <td> Previous </td> <td> <a href="../blk/{{ blk.previousblockhash }}"> {{ blk.previousblockhash }} </a></td> </tr>
+                <tr> <td> Next </td> <td> <a href="../blk/{{ blk.nextblockhash }}"> {{ blk.nextblockhash }} </a></td> </tr>
+         </table>
+
+        <h4> Tx list:</h4>
+        <table>
+            {% for txhash in blk.tx %}
+            <tr> <td>  </td> </tr>
+                <tr> <td>   <a href="../tx/{{txhash}}"> {{ txhash }} </a></td> </tr>
+            {% endfor %}
+        </table>
+    </div>
+ 
+{% endblock %}

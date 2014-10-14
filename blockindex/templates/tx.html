@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<div class="transaction-wrap col-lg-12">
+    <h1> Tx Info:</small> </h1>
+<div class="transaction_section">
+    <div class="transaction" >
+        <div class="transaction_hash">
+            <a class="nos-link" href="../tx/{{ tx.txid }}"> {{ tx.txid }} </a>
+        </div>
+     <div class="currency_btn">
+        {% if  not tx.confirmations %}
+        <button class="btn btn-danger cb">
+            <span> unconfirmed</span>
+        </button>
+        {% endif %}
+        <button class="btn btn-success cb">
+            <span> {{tx.valueOut|float}} </span>
+        </button>
+    </div>    
+
+        <div class="tx_input">
+            {% if tx.coinbase %}
+            <span class="pull-left">
+                <span> Awards</span>
+            </span>
+            {% else %}
+            {% for txin in tx.vin %}
+            <a href="../tx/{{txin.txid}}"> {{txin.txid}} </a>
+            <span class="pull-right">
+                <span> <a href={{txin.txid}}></a></span>
+            </span>
+            </br>
+            {% endfor %}
+            {% endif %}
+        </div>
+
+        <div class="tx_arrow">
+            <i class="fa fa-arrow-right fa-3x">
+            </i>
+        </div>
+        <div class="tx_output">
+            {% for txout in tx.vout %}
+            {% for addr in txout.scriptPubKey.addresses%}
+            <a href="../addr/{{ addr }}"> {{ addr }}</a>
+            {% endfor %}
+            <span class="pull-right">
+                <span> ({{txout.value|float}}  BTC)</span>
+            </span>
+            </br>
+            {% endfor %}
+        </div>
+
+    </div>
+    </div>
+
+</div>
+
+
+<div class="middle-section">
+    <div class="col-lg-7">
+        <table class="table table-striped">
+            <tbody>
+            <tr> <th colspan="2"> Tx info</th> </tr>
+            <tr> <td> Version </td> <td> {{tx.version}}</td> </tr>
+            <tr> <td> locktime </td> <td> {{tx.locktime}}</td> </tr>
+            <tr> <td> Time </td> <td> {{tx.time}}</td> </tr>
+            <tr> <td> Confirmations </td> <td> {{tx.confirmations}}</td> </tr>
+            <tr> <td> Size </td> <td> {{tx.size}}</td> </tr>
+            <tr> <td> Input </td> <td> {{tx.valueIn|float}} BTC</td> </tr>
+            <tr> <td> Out </td> <td> {{tx.valueOut|float}} BTC</td> </tr>
+            <tr> <td> Fee </td> <td> {{tx.fee|float}} BTC</td> </tr>
+            <tr> <td> In Block </td> <td> <a href="../blk/{{tx.blockhash}}"> {{tx.blockhash}} </a> </td> </tr>
+        </tr>
+        </tbody>
+    </table>
+        {% if tx.coinbase %}
+            <h4> Coinbase:</h4>
+            <table class="table table-striped">
+                <tr> <td> {{tx.vin[0].coinbase}} </td> </tr>
+                <tr> <td> Decode: {{tx.decode}} </td> </tr>
+            </table>
+        {% else %}
+            <h4> txin list: </h4>
+            <table class="table table-striped">
+                {% for txin in tx.vin %}
+                <tr> <td> {{txin.scriptSig.asm}} </td> </tr>
+                <tr> <td> {{txin.scriptSig.hex}} </td> </tr>
+                {% endfor %}
+            </table>
+        {% endif %}
+        <h4> txout list: </h4>
+        <table class="table table-striped">
+            {% for txout in tx.vout %}
+            <tr> <td> {{txout.scriptPubKey.asm}} </td> </tr>
+            <tr> <td> {{txout.scriptPubKey.hex}} </td> </tr>
+            {% endfor %}
+        </table>
+        <h4> tx hex:</h4>
+        <table class="table table-tx">
+            <tr > <td> {{tx.hex}} </td> </tr>
+        </table>
+</div>
+</div>
+
+{% endblock %}
